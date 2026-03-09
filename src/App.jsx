@@ -23,6 +23,8 @@ function App() {
         <button className='text-md font-medium  bg-green-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleIncrease}>Increase</button>
         <button className='text-md font-medium bg-red-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleDecrease}>Decrease</button>
         <button className='text-md font-medium bg-blue-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
+        <button className='text-md font-medium bg-blue-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
+        <button className='text-lg font-medium bg-red-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
       </div>
     </div>
     </div>
