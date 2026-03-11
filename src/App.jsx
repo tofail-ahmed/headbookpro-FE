@@ -1,34 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// import { useState } from "react";
+import "./App.css";
+import Counter from "./Counter"; // Counter component
+import TodoList from "./Todo"; // Todo list component
+import Home from "./Home";
+import { Link, Routes, Route } from "react-router-dom";
 
 function App() {
-  const [count, setCount] = useState(0);
-  const handleIncrease=()=>{
-    setCount(count+1)
-  }
-  const handleDecrease=()=>{
-    setCount(count-1)
-  }
-  const handleReset=()=>{
-    setCount(0)
-  }
+  // const [count, setCount] = useState(0);
+
+  // const handleIncrease = () => setCount(prev => prev + 1);
+  // const handleDecrease = () => setCount(prev => prev - 1);
+  // const handleReset = () => setCount(0);
 
   return (
-    <div flex justify-center items-center>
-      <div className=' '>
-      <h1  className= ' text-center text-amber-700'>Current value: <span className='font-extrabold '>{count}</span></h1>
-      <div className='text-center flex justify-center items-center gap-6'>
-        <button className='text-md font-medium  bg-green-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleIncrease}>Increase</button>
-        <button className='text-md font-medium bg-red-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleDecrease}>Decrease</button>
-        <button className='text-md font-medium bg-blue-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
-        <button className='text-md font-medium bg-blue-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
-        <button className='text-lg font-medium bg-red-500 text-blue-200 px-2 border-2 border-blue-500 rounded-md' onClick={handleReset}>Reset</button>
-      </div>
+    <div>
+      {/* Navigation */}
+      <nav className="flex gap-4 p-4 bg-gray-100">
+        <Link to="/home" className="text-blue-500 font-medium">
+          Home
+        </Link>
+        <Link to="/counter" className="text-blue-500 font-medium">
+          Counter
+        </Link>
+        <Link to="/todo" className="text-blue-500 font-medium">
+          Todo List
+        </Link>
+      </nav>
+
+      {/* Routes */}
+      <Routes>
+        <Route path="/" element={<Home/>} />
+
+        <Route path="/home" element={<Home />} />
+        <Route path="/counter" element={<Counter />} />
+        <Route path="/todo" element={<TodoList />} />
+      </Routes>
     </div>
-    </div>
-  )
+  );
 }
 
-export default App
+export default App;
