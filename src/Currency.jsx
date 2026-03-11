@@ -1,25 +1,4 @@
 import { useState, useEffect } from "react";
-import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from "chart.js";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 // Alphabetically sorted currency list
 const currencyList = [
@@ -81,14 +60,6 @@ function countryCodeToEmoji(code) {
   );
 }
 
-// Format date
-const formatDate = (d) => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
 export default function Currency() {
   const [amount, setAmount] = useState("");
   const [fromCurrency, setFromCurrency] = useState("USD");
@@ -97,9 +68,8 @@ export default function Currency() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [historicalRates, setHistoricalRates] = useState({ dates: [], values: [] });
 
-  // Fetch latest rates
+  // Fetch rates
   const fetchRates = async () => {
     setLoading(true);
     setError(null);
@@ -107,6 +77,7 @@ export default function Currency() {
       const res = await fetch(`https://open.er-api.com/v6/latest/${fromCurrency}`);
       const data = await res.json();
       if (!res.ok || data.result !== "success") throw new Error("API error");
+
       setRates(data.rates);
     } catch {
       setError("Unable to fetch live rates");
@@ -115,47 +86,27 @@ export default function Currency() {
     }
   };
 
-  // Fetch 7-day historical rates
-  const fetchHistoricalRates = async () => {
-    try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - 6); // last 7 days
-
-      const url = `https://api.exchangerate.host/timeseries?start_date=${formatDate(
-        startDate
-      )}&end_date=${formatDate(endDate)}&base=${fromCurrency}&symbols=${toCurrency}`;
-
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data.success && data.rates) {
-        const dates = Object.keys(data.rates).sort();
-        const values = dates.map((d) => data.rates[d][toCurrency]);
-        setHistoricalRates({ dates, values });
-      } else {
-        setHistoricalRates({ dates: [], values: [] });
-      }
-    } catch {
-      setHistoricalRates({ dates: [], values: [] });
-    }
-  };
-
   useEffect(() => {
     fetchRates();
-    fetchHistoricalRates();
-  }, [fromCurrency, toCurrency]);
+  }, [fromCurrency]);
 
+  // Convert amount & include current local time
   useEffect(() => {
     if (!amount || isNaN(amount)) {
       setResult("");
       return;
     }
-    if (rates[toCurrency]) {
-      setResult(`${amount} ${fromCurrency} = ${(amount * rates[toCurrency]).toFixed(4)} ${toCurrency}`);
+    const rate = rates[toCurrency];
+    if (rate) {
+      const now = new Date();
+      const formattedNow = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+      setResult(`${amount} ${fromCurrency} = ${(amount * rate).toFixed(4)} ${toCurrency} (as of ${formattedNow})`);
+    } else {
+      setResult("");
     }
   }, [amount, fromCurrency, toCurrency, rates]);
 
+  // Swap currencies
   const swap = () => {
     const temp = fromCurrency;
     setFromCurrency(toCurrency);
@@ -205,7 +156,7 @@ export default function Currency() {
         <div className="flex gap-2 mb-3">
           <button
             onClick={swap}
-            className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm flex-1"
+            className="bg-purple-500 text-white px-3 py-1 rounded text-sm flex-1"
           >
             🔄 Swap
           </button>
@@ -213,26 +164,10 @@ export default function Currency() {
 
         {loading && <p className="text-center text-yellow-600">⏳ Loading rates...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
-        {result && <div className="bg-gray-100 dark:bg-gray-700 p-3 mt-2 rounded text-center font-semibold text-lg">{result}</div>}
 
-        {/* Historical chart */}
-        {historicalRates.values.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-center font-semibold mb-2">📈 Last 7 Days</h3>
-            <Line
-              data={{
-                labels: historicalRates.dates,
-                datasets: [
-                  {
-                    label: `${fromCurrency} → ${toCurrency}`,
-                    data: historicalRates.values,
-                    borderColor: "rgba(59, 130, 246, 1)",
-                    backgroundColor: "rgba(59, 130, 246, 0.2)",
-                  },
-                ],
-              }}
-              options={{ responsive: true, plugins: { legend: { display: true } } }}
-            />
+        {result && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 mt-2 rounded text-center font-semibold text-lg">
+            {result}
           </div>
         )}
       </div>
