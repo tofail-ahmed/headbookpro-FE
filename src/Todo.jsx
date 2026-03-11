@@ -1,226 +1,264 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-function TodoList() {
+export default function TodoList() {
 
   const [task, setTask] = useState("");
   const [description, setDescription] = useState("");
   const [author, setAuthor] = useState("");
-  const [openIndex, setOpenIndex] = useState(null);
+  const [priority, setPriority] = useState("Low");
 
-  const [todos, setTodos] = useState(() => {
+  const [todos, setTodos] = useState([]);
+  const [search, setSearch] = useState("");
+
+  const [filter, setFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+
+  const [darkMode, setDarkMode] = useState(false);
+  const [expanded, setExpanded] = useState(null);
+  const [dragIndex, setDragIndex] = useState(null);
+
+  useEffect(() => {
     const saved = localStorage.getItem("todos");
-    return saved ? JSON.parse(saved) : [];
-  });
+    if (saved) setTodos(JSON.parse(saved));
+  }, []);
 
   const updateTodos = (newTodos) => {
     setTodos(newTodos);
     localStorage.setItem("todos", JSON.stringify(newTodos));
   };
 
-  const handleAdd = () => {
+  const addTask = () => {
     if (!task.trim()) return;
 
-    const newTodo = {
+    const newTask = {
       text: task,
-      description: description || "No description",
-      author: author || "Anonymous",
+      description,
+      author,
+      priority,
       completed: false,
       createdAt: new Date().toLocaleString(),
       lastEdited: null,
       editCount: 0,
-      completedAt: null
+      completedAt: null,
     };
 
-    updateTodos([newTodo, ...todos]);
+    updateTodos([newTask, ...todos]);
 
-    setTask("");
-    setDescription("");
-    setAuthor("");
+    setTask(""); setDescription(""); setAuthor(""); setPriority("Low");
   };
 
-  const handleDelete = (index) => {
+  const deleteTask = (index) => {
     const newTodos = todos.filter((_, i) => i !== index);
     updateTodos(newTodos);
   };
 
   const toggleComplete = (index) => {
     const newTodos = [...todos];
-
     newTodos[index].completed = !newTodos[index].completed;
-
-    newTodos[index].completedAt = newTodos[index].completed
-      ? new Date().toLocaleString()
-      : null;
-
+    newTodos[index].completedAt = newTodos[index].completed ? new Date().toLocaleString() : null;
     updateTodos(newTodos);
   };
 
   const handleEdit = (index) => {
-
-    const newText = prompt("Edit task title", todos[index].text);
-    const newDesc = prompt("Edit description", todos[index].description);
+    const newTitle = prompt("Edit task title", todos[index].text);
+    if (newTitle === null) return;
+    const newDescription = prompt("Edit description", todos[index].description);
     const newAuthor = prompt("Edit author", todos[index].author);
+    const newPriority = prompt("Edit priority (High / Medium / Low)", todos[index].priority);
 
-    if (newText !== null && newText.trim() !== "") {
+    const newTodos = [...todos];
+    newTodos[index].text = newTitle;
+    newTodos[index].description = newDescription;
+    newTodos[index].author = newAuthor;
+    newTodos[index].priority = newPriority;
+    newTodos[index].lastEdited = new Date().toLocaleString();
+    newTodos[index].editCount += 1;
 
-      const newTodos = [...todos];
-
-      newTodos[index].text = newText;
-      newTodos[index].description = newDesc || newTodos[index].description;
-      newTodos[index].author = newAuthor || newTodos[index].author;
-
-      newTodos[index].lastEdited = new Date().toLocaleString();
-      newTodos[index].editCount = (newTodos[index].editCount || 0) + 1;
-
-      updateTodos(newTodos);
-    }
+    updateTodos(newTodos);
   };
 
-  const clearAll = () => {
-    if (window.confirm("Are you sure you want to clear all tasks?")) {
-      updateTodos([]);
-    }
+  const clearAll = () => updateTodos([]);
+
+  const handleDragStart = (index) => setDragIndex(index);
+  const handleDrop = (index) => {
+    const newTodos = [...todos];
+    const dragged = newTodos.splice(dragIndex, 1)[0];
+    newTodos.splice(index, 0, dragged);
+    updateTodos(newTodos);
   };
 
-  const toggleDetails = (index) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
+  const filteredTodos = todos
+    .filter((todo) => todo.text.toLowerCase().includes(search.toLowerCase()))
+    .filter((todo) => filter === "completed" ? todo.completed : filter === "pending" ? !todo.completed : true)
+    .filter((todo) => priorityFilter === "all" ? true : todo.priority === priorityFilter);
 
   return (
+    <div className={darkMode ? "bg-gray-900 text-white min-h-screen text-sm" : "bg-white text-black min-h-screen text-sm"}>
+      <div className="max-w-3xl mx-auto p-3">
 
-    <div className="flex justify-center h-screen bg-gray-100 p-4">
-
-      <div className="w-96 bg-white rounded shadow flex flex-col h-full">
+        {/* DARK MODE */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="mb-2 bg-purple-500 text-white px-2 py-1 rounded text-xs"
+        >
+          🌓 Toggle Dark
+        </button>
 
         {/* FORM */}
-        <div className="p-4 border-b sticky top-0 bg-white z-10">
+        <div className="sticky top-0 bg-gray-200/50 border-1 rounded-xs dark:bg-gray-900 p-3 shadow z-10 text-xs">
 
-          <h1 className="text-2xl font-bold text-center mb-2">
-            Todo List
-          </h1>
+          <h2 className="text-xl font-bold mb-2">📝 Todo List</h2>
 
           <input
-            type="text"
+            value={task} onChange={(e) => setTask(e.target.value)}
             placeholder="Task title"
-            className="border px-2 py-1 w-full rounded mb-1"
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
+            className="border p-1 w-full mb-1 text-xs"
           />
 
           <input
-            type="text"
-            placeholder="Task description"
-            className="border px-2 py-1 w-full rounded mb-1"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
+            className="border p-1 w-full mb-1 text-xs"
           />
 
           <input
-            type="text"
+            value={author} onChange={(e) => setAuthor(e.target.value)}
             placeholder="Author"
-            className="border px-2 py-1 w-full rounded mb-1"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
+            className="border p-1 w-full mb-1 text-xs"
           />
+
+          <select
+            value={priority} onChange={(e) => setPriority(e.target.value)}
+            className="border p-1 w-full mb-1 text-xs"
+          >
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
 
           <button
-            onClick={handleAdd}
-            className="bg-green-500 text-white px-3 py-1 rounded w-full mt-1"
+            onClick={addTask}
+            className="bg-blue-500 text-white px-2 py-1 rounded w-full mb-2 text-xs flex items-center justify-center gap-1"
           >
-            Add Task
+            ➕ Add Task
           </button>
 
-        </div>
+          {/* SEARCH + CLEAR */}
+          <div className="flex justify-between items-center mt-2 gap-2">
+            <input
+              placeholder="🔍 Search task..."
+              className="border p-1 flex-1 text-xs"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button
+              onClick={clearAll}
+              className="bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+            >
+              🗑 Clear All
+            </button>
+          </div>
 
+          {/* FILTERS */}
+          <div className="flex justify-between mt-2 flex-wrap gap-2">
 
-        {/* STATS */}
-        {todos.length > 0 && (
+            {/* STATUS */}
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => setFilter("all")} className="bg-gray-500 text-white px-2 py-1 rounded text-xs flex items-center gap-1">📋 All</button>
+              <button onClick={() => setFilter("completed")} className="bg-green-500 text-white px-2 py-1 rounded text-xs flex items-center gap-1">✅ Completed</button>
+              <button onClick={() => setFilter("pending")} className="bg-yellow-500 text-white px-2 py-1 rounded text-xs flex items-center gap-1">⏳ Pending</button>
+            </div>
 
-          <div className="px-4 py-2 text-sm text-gray-600 border-b">
-
-            Total: {todos.length} |
-            Completed: {todos.filter(t => t.completed).length}
+            {/* PRIORITY */}
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => setPriorityFilter("all")} className="bg-gray-400 px-2 py-1 rounded text-xs flex items-center gap-1">🎯 All Priority</button>
+              <button onClick={() => setPriorityFilter("High")} className="bg-red-500 text-white px-2 py-1 rounded text-xs flex items-center gap-1">🔥 High</button>
+              <button onClick={() => setPriorityFilter("Medium")} className="bg-yellow-500 px-2 py-1 rounded text-xs flex items-center gap-1">⚡ Medium</button>
+              <button onClick={() => setPriorityFilter("Low")} className="bg-green-500 text-white px-2 py-1 rounded text-xs flex items-center gap-1">💚 Low</button>
+            </div>
 
           </div>
 
-        )}
-
+        </div>
 
         {/* TASK LIST */}
-        <ul className="flex-1 overflow-y-auto p-4 space-y-3">
+        <ul className="mt-3">
 
-          {todos.map((todo, index) => (
+          {filteredTodos.map((todo, index) => (
 
-            <li key={index} className="border-b pb-2">
+            <li
+              key={index}
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(index)}
+              className="border p-2 mb-1 rounded shadow text-xs"
+            >
 
               <div className="flex justify-between items-center">
 
-                <div className="flex items-center gap-2">
+                <span
+                  className={
+                    todo.completed
+                      ? "line-through text-gray-400"
+                      : todo.priority === "High"
+                      ? "text-red-500 font-bold"
+                      : todo.priority === "Medium"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                  }
+                >
+                  {todo.text}
+                </span>
 
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => toggleComplete(index)}
-                  />
+                <div className="flex gap-1">
 
-                  <span className={todo.completed ? "line-through text-gray-400" : ""}>
-                    {todo.text}
-                  </span>
+  {/* COMPLETE */}
+  <button
+    onClick={() => toggleComplete(index)}
+    className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors
+      ${todo.completed ? 'bg-green-300 text-green-900 hover:bg-green-400' : 'bg-green-500 text-white hover:bg-green-600'}`}
+  >
+    ✔ {todo.completed ? 'Completed' : 'Complete'}
+  </button>
 
-                </div>
+  {/* EDIT */}
+  <button
+    onClick={() => handleEdit(index)}
+    className="px-2 py-1 bg-yellow-400 text-yellow-900 rounded text-xs flex items-center gap-1 hover:bg-yellow-500 transition-colors"
+  >
+    ✏ Edit
+  </button>
 
+  {/* DELETE */}
+  <button
+    onClick={() => deleteTask(index)}
+    className="px-2 py-1 bg-red-500 text-white rounded text-xs flex items-center gap-1 hover:bg-red-600 transition-colors"
+  >
+    🗑 Delete
+  </button>
 
-                <div className="flex gap-2">
+  {/* DETAILS */}
+  <button
+    onClick={() => setExpanded(expanded === index ? null : index)}
+    className="px-2 py-1 bg-gray-400 text-gray-900 rounded text-xs flex items-center gap-1 hover:bg-gray-500 transition-colors"
+  >
+    ⬇ Details
+  </button>
 
-                  <button
-                    onClick={() => toggleDetails(index)}
-                    className="bg-blue-500 text-white px-2 py-1 rounded"
-                  >
-                    {openIndex === index ? "Hide ▲" : "Details ▼"}
-                  </button>
-
-                  <button
-                    onClick={() => handleEdit(index)}
-                    className="bg-yellow-400 text-white px-2 py-1 rounded"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-
-                </div>
+</div>
 
               </div>
 
-
-              {/* DETAILS DROPDOWN */}
-              {openIndex === index && (
-
-                <div className="ml-6 mt-2 text-xs text-gray-500 flex flex-col gap-1">
-
-                  <span>Description: {todo.description}</span>
-
-                  <span>Author: {todo.author}</span>
-
-                  <span>Created: {todo.createdAt}</span>
-
-                  {todo.lastEdited && (
-                    <span>Last Edited: {todo.lastEdited}</span>
-                  )}
-
-                  {todo.completed && todo.completedAt && (
-                    <span>Completed: {todo.completedAt}</span>
-                  )}
-
-                  <span>Edit Count: {todo.editCount || 0}</span>
-
+              {expanded === index && (
+                <div className="mt-1 text-xs">
+                  <p><b>Description:</b> {todo.description}</p>
+                  <p><b>Author:</b> {todo.author}</p>
+                  <p><b>Priority:</b> {todo.priority}</p>
+                  <p><b>Created:</b> {todo.createdAt}</p>
+                  {todo.lastEdited && <p><b>Last Edited:</b> {todo.lastEdited}</p>}
+                  <p><b>Edit Count:</b> {todo.editCount}</p>
+                  {todo.completedAt && <p><b>Completed At:</b> {todo.completedAt}</p>}
                 </div>
-
               )}
 
             </li>
@@ -229,24 +267,7 @@ function TodoList() {
 
         </ul>
 
-
-        {/* CLEAR ALL */}
-        {todos.length > 0 && (
-
-          <button
-            onClick={clearAll}
-            className="w-full bg-gray-700 text-white px-3 py-1 rounded mt-2 mb-4"
-          >
-            Clear All
-          </button>
-
-        )}
-
       </div>
-
     </div>
-
   );
 }
-
-export default TodoList;
