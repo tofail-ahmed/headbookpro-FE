@@ -3,6 +3,7 @@ import "./App.css";
 import Counter from "./Counter"; // Counter component
 import TodoList from "./Todo"; // Todo list component
 import Home from "./Home";
+import Currency from "./Currency";
 import { Link, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -25,6 +26,9 @@ function App() {
         <Link to="/todo" className="text-blue-500 font-medium">
           Todo List
         </Link>
+        <Link to="/currency" className="text-blue-500 font-medium">
+          Currency Converter
+        </Link>
       </nav>
 
       {/* Routes */}
@@ -34,6 +38,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/counter" element={<Counter />} />
         <Route path="/todo" element={<TodoList />} />
+        <Route path="/currency" element={<Currency />} />
       </Routes>
     </div>
   );
